@@ -1,63 +1,109 @@
-{
-  lib,
-  nixpkgs,
-  home-manager,
-  nix-darwin,
-  ...
-}:
+{ lib, ... }:
 let
-  inherit (lib.fix (delib: import ./fixed-points.nix { inherit delib lib; }))
-    makeRecursivelyExtensible
-    ;
+  inherit (import ./toplevel/lib.nix { inherit lib; }) mkLib;
 in
-makeRecursivelyExtensible (
-  delib:
-  let
-    inherit (delib) _callLib;
-  in
-  {
-    _callLib = file: import file delib._callLibArgs;
+mkLib "delib" (delib: {
+  fixedPoints = delib._callLib ./toplevel/fixed-points.nix;
+  inherit (delib.fixedPoints)
+    fix
+    fixWithUnfix
+    recursivelyExtends
+    recursivelyComposeExtensions
+    recursivelyComposeManyExtensions
+    makeRecursivelyExtensible
+    makeRecursivelyExtensibleWithCustomName
+    ;
 
-    _callLibArgs = {
-      inherit
-        delib
-        lib
-        nixpkgs
-        home-manager
-        nix-darwin
-        ;
-    };
+  inherit (delib._callLib ./toplevel/lib.nix) mkLib;
 
-    attrset = _callLib ./attrset.nix;
-    inherit (delib.attrset) getAttrByStrPath setAttrByStrPath hasAttrs;
+  modules = delib._callLib ./modules;
+  inherit (delib.modules) denixConfiguration compileModule;
 
-    inherit (_callLib ./configurations) configurations;
+  attrset = delib._callLib ./attrset.nix;
+  inherit (delib.attrset) getAttrByStrPath setAttrByStrPath hasAttrs;
 
-    inherit (_callLib ./fixed-points.nix)
-      fix
-      fixWithUnfix
-      recursivelyExtends
-      recursivelyComposeExtensions
-      recursivelyComposeManyExtensions
-      makeRecursivelyExtensible
-      makeRecursivelyExtensibleWithCustomName
-      ;
-
-    inherit (_callLib ./maintainers.nix) maintainers;
-
-    options = _callLib ./options.nix;
-
-    inherit (_callLib ./extension.nix)
-      extension
-      extensions
-      callExtension
-      callExtensions
-      withExtensions
-      mergeExtensions
-      ;
-
-    inherit (_callLib ./umport.nix) umport;
-  }
-  // (import ./options.nix { inherit delib lib; })
-  # After implementing https://github.com/NixOS/nix/issues/4090 it will be possible to use `// callLib` (to inherit all)
-)
+  options = delib._callLib ./options.nix;
+  # builtins.concatStringsSep " " (builtins.attrNames lib.options)
+  inherit (delib.options)
+    allowAnything
+    allowAttrs
+    allowAttrsLegacy
+    allowAttrsOf
+    allowBool
+    allowCoercedTo
+    allowEnum
+    allowFloat
+    allowFunction
+    allowFunctionTo
+    allowInt
+    allowIntBetween
+    allowList
+    allowListOf
+    allowNull
+    allowNumber
+    allowOneOf
+    allowPackage
+    allowPath
+    allowPort
+    allowSingleLineStr
+    allowStr
+    allowSubmodule
+    allowSubmoduleWith
+    anything
+    anythingOption
+    apply
+    attrs
+    attrsLegacy
+    attrsLegacyOption
+    attrsOf
+    attrsOfOption
+    attrsOption
+    bool
+    boolOption
+    coercedTo
+    coercedToOption
+    defaultText
+    description
+    enum
+    enumOption
+    example
+    float
+    floatOption
+    function
+    functionOption
+    functionTo
+    functionToOption
+    int
+    intBetween
+    intBetweenOption
+    intOption
+    internal
+    list
+    listOf
+    listOfOption
+    listOption
+    null
+    nullOption
+    number
+    numberOption
+    oneOf
+    oneOfOption
+    package
+    packageOption
+    path
+    pathOption
+    port
+    portOption
+    readOnly
+    relatedPackages
+    singleLineStr
+    singleLineStrOption
+    str
+    strOption
+    submodule
+    submoduleOption
+    submoduleWith
+    submoduleWithOption
+    visible
+    ;
+})
