@@ -139,6 +139,10 @@
                       inherit currentHostName useHomeManagerModule homeManagerUser;
                     };
                     inherit useHomeManagerModule homeManagerUser; # otherwise it's impossible to make config.home-manager optional when not useHomeManagerModule.
+                  }
+                  // lib.optionalAttrs (currentHostName != null) {
+                    host = nixosSystem.config.${myconfigName}.hosts.${currentHostName};
+                    hosts = nixosSystem.config.${myconfigName}.hosts;
                   };
                   modules =
                     (internalExtraModules "nixos")
@@ -155,6 +159,10 @@
                       inherit currentHostName useHomeManagerModule homeManagerUser;
                     };
                     inherit useHomeManagerModule homeManagerUser; # otherwise it's impossible to make config.home-manager optional when not useHomeManagerModule.
+                  }
+                  // lib.optionalAttrs (currentHostName != null) {
+                    host = homeSystem.config.${myconfigName}.hosts.${currentHostName};
+                    hosts = homeSystem.config.${myconfigName}.hosts;
                   };
                   pkgs = homeManagerNixpkgs.legacyPackages.${homeManagerSystem};
                   modules = (internalExtraModules "home") ++ extraModules ++ files ++ extensionsModules;
@@ -167,6 +175,10 @@
                       inherit currentHostName useHomeManagerModule homeManagerUser;
                     };
                     inherit useHomeManagerModule homeManagerUser; # otherwise it's impossible to make config.home-manager optional when not useHomeManagerModule.
+                  }
+                  // lib.optionalAttrs (currentHostName != null) {
+                    host = darwinSystem.config.${myconfigName}.hosts.${currentHostName};
+                    hosts = darwinSystem.config.${myconfigName}.hosts;
                   };
                   # FIXME: is this really necessary?
                   # pkgs = ...;
