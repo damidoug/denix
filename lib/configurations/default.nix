@@ -121,6 +121,7 @@
               currentHostName,
               isInternal ? false,
               internalExtraModules ? (moduleSystem_: [ ]),
+              host ? null,
             }@args:
             if homeManagerUser == null && (useHomeManagerModule || moduleSystem == "home") then
               abort "Please specify 'delib.configurations :: homeManagerUser' or 'delib.host :: homeManagerUser'."
@@ -139,7 +140,7 @@
                       inherit currentHostName useHomeManagerModule homeManagerUser;
                     };
                     inherit useHomeManagerModule homeManagerUser; # otherwise it's impossible to make config.home-manager optional when not useHomeManagerModule.
-                  };
+                  } // lib.optionalAttrs (host != null) { inherit host; };
                   modules =
                     (internalExtraModules "nixos")
                     ++ extraModules
@@ -155,7 +156,7 @@
                       inherit currentHostName useHomeManagerModule homeManagerUser;
                     };
                     inherit useHomeManagerModule homeManagerUser; # otherwise it's impossible to make config.home-manager optional when not useHomeManagerModule.
-                  };
+                  } // lib.optionalAttrs (host != null) { inherit host; };
                   pkgs = homeManagerNixpkgs.legacyPackages.${homeManagerSystem};
                   modules = (internalExtraModules "home") ++ extraModules ++ files ++ extensionsModules;
                 };
@@ -167,7 +168,7 @@
                       inherit currentHostName useHomeManagerModule homeManagerUser;
                     };
                     inherit useHomeManagerModule homeManagerUser; # otherwise it's impossible to make config.home-manager optional when not useHomeManagerModule.
-                  };
+                  } // lib.optionalAttrs (host != null) { inherit host; };
                   # FIXME: is this really necessary?
                   # pkgs = ...;
                   modules =
@@ -214,7 +215,7 @@
               myconfig = system.config.${myconfigName};
 
               system = mkSystem {
-                inherit moduleSystem;
+                inherit moduleSystem host;
                 inherit (host) useHomeManagerModule homeManagerUser homeManagerSystem;
                 currentHostName = host.name;
                 internalExtraModules =

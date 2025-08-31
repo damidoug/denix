@@ -191,10 +191,13 @@ delib.extension {
               };
 
             myconfig.always =
-              { myconfig, ... }:
+              { myconfig, ... }@args:
               lib.optionalAttrs extensionConfig.hosts.args.enable (
                 delib.setAttrByStrPath extensionConfig.hosts.args.path {
-                  shared = { inherit (myconfig) host hosts; };
+                  shared = { 
+                    host = args.host or null;
+                    hosts = myconfig.hosts or { };
+                  };
                 }
               )
               // lib.optionalAttrs (assertionsModuleSystem == "myconfig") (
