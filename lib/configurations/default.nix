@@ -70,6 +70,7 @@
               useHomeManagerModule,
               homeManagerUser,
               currentHostName ? null,
+              currentHost ? null,
             }:
             let
               extendedDelib = delib.recursivelyExtend (
@@ -87,6 +88,7 @@
                       currentHostName
                       useHomeManagerModule
                       homeManagerUser
+                      currentHost
                       ;
                   };
 
@@ -138,11 +140,20 @@
                       config = nixosSystem.config;
                       moduleSystem = "nixos";
                       inherit currentHostName useHomeManagerModule homeManagerUser;
+                      currentHost = host;
                     };
                     inherit useHomeManagerModule homeManagerUser; # otherwise it's impossible to make config.home-manager optional when not useHomeManagerModule.
                   } // lib.optionalAttrs (host != null) { inherit host; };
                   modules =
-                    (internalExtraModules "nixos")
+                    # Pass host through _module.args at the very beginning to avoid circular dependency
+                    (lib.optionals (host != null) [ 
+                      { 
+                        _module.args.host = host; 
+                        # Also set it with high priority to ensure it overrides any later definitions
+                        imports = [ { _module.args.host = lib.mkForce host; } ];
+                      } 
+                    ])
+                    ++ (internalExtraModules "nixos")
                     ++ extraModules
                     ++ files
                     ++ (lib.optionals useHomeManagerModule [ home-manager.nixosModules.home-manager ])
@@ -154,11 +165,21 @@
                       config = homeSystem.config;
                       moduleSystem = "home";
                       inherit currentHostName useHomeManagerModule homeManagerUser;
+                      currentHost = host;
                     };
                     inherit useHomeManagerModule homeManagerUser; # otherwise it's impossible to make config.home-manager optional when not useHomeManagerModule.
                   } // lib.optionalAttrs (host != null) { inherit host; };
                   pkgs = homeManagerNixpkgs.legacyPackages.${homeManagerSystem};
-                  modules = (internalExtraModules "home") ++ extraModules ++ files ++ extensionsModules;
+                  modules = 
+                    # Pass host through _module.args at the very beginning to avoid circular dependency
+                    (lib.optionals (host != null) [ 
+                      { 
+                        _module.args.host = host; 
+                        # Also set it with high priority to ensure it overrides any later definitions
+                        imports = [ { _module.args.host = lib.mkForce host; } ];
+                      } 
+                    ])
+                    ++ (internalExtraModules "home") ++ extraModules ++ files ++ extensionsModules;
                 };
                 darwinSystem = nix-darwin.lib.darwinSystem {
                   specialArgs = specialArgs // {
@@ -166,13 +187,22 @@
                       config = darwinSystem.config;
                       moduleSystem = "darwin";
                       inherit currentHostName useHomeManagerModule homeManagerUser;
+                      currentHost = host;
                     };
                     inherit useHomeManagerModule homeManagerUser; # otherwise it's impossible to make config.home-manager optional when not useHomeManagerModule.
                   } // lib.optionalAttrs (host != null) { inherit host; };
                   # FIXME: is this really necessary?
                   # pkgs = ...;
                   modules =
-                    (internalExtraModules "darwin")
+                    # Pass host through _module.args at the very beginning to avoid circular dependency
+                    (lib.optionals (host != null) [ 
+                      { 
+                        _module.args.host = host; 
+                        # Also set it with high priority to ensure it overrides any later definitions
+                        imports = [ { _module.args.host = lib.mkForce host; } ];
+                      } 
+                    ])
+                    ++ (internalExtraModules "darwin")
                     ++ extraModules
                     ++ files
                     ++ (lib.optionals useHomeManagerModule [ home-manager.darwinModules.home-manager ])
@@ -200,6 +230,7 @@
                 currentHostName = null;
                 isInternal = true;
                 internalExtraModules = _: [ mkConfigurationsSystemExtraModule ];
+                host = null; # No host for internal system
               }).config.${myconfigName}
             )
             hosts
